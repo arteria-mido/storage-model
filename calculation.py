@@ -10,7 +10,7 @@ TODO 2: classes to be sorted into own separate modules and imported here
 import pandas as pd
 # import numpy as np
 import json
-# from data.standard_boiler import StandardBoilerModel
+from data.standard_boiler import StandardBoilerModel
 
 # EXCELDATA = 'D:/Arteria/Storage-model/data/storage_model.xlsx'
 # OUTPUTDIR = 'D:/Arteria/Storage-model/data/'
@@ -33,7 +33,7 @@ class StandardHeatingProfile:
         loads column 'BWW HH [kW] adaptiert' in excel sheet 'Zeitreihen'
         and stores in class list adapted_bww
         """
-        zeitreihen = pd.read_excel(EXCELDATA, sheet_name='Zeitreihen', header=5, usecols=['BWW HH [kW] adaptiert'])
+        zeitreihen:pd.DataFrame = pd.read_excel(EXCELDATA, sheet_name='Zeitreihen', header=5, usecols=['BWW HH [kW] adaptiert'])
         cls.adapted_bww = zeitreihen.values.flatten().tolist()
         # print(len(zeitreihen.values.flatten().tolist()))
 
@@ -91,15 +91,17 @@ class StandardBoiler:
 
     @classmethod
     def calcActualCap(cls, index: int) -> float:
-        remaining_e = cls.stored_energy[index-1] - HotWaterDemand.hwd[index]
-        if (remaining_e + cls.theoretical_cap[index] >= cls.maxCapacity): actualCap = cls.maxCapacity - remaining_e
-        else: actualCap = cls.theoretical_cap[index]
+        current_stored_e = cls.stored_energy[index-1] - HotWaterDemand.hwd[index]
+        if (current_stored_e + cls.theoretical_cap[index] >= cls.maxCapacity): 
+            actualCap = cls.maxCapacity - current_stored_e
+        else:
+            actualCap = cls.theoretical_cap[index]
         return actualCap
 
     @classmethod
     def calcResidualEnergy(cls, index: int) -> float:
-        residual_e = cls.stored_energy[index-1] - HotWaterDemand.hwd[index] + cls.actual_cap[index]
-        return residual_e
+        current_stored_e = cls.stored_energy[index-1] - HotWaterDemand.hwd[index] + cls.actual_cap[index]
+        return current_stored_e
 
     @classmethod
     def loadOutputData(cls) -> None:
@@ -122,6 +124,7 @@ class StandardBoiler:
         """
         outputJson = {}
         outputJson['timestamps'] = []
+        outputJson['hot water demand'] = HotWaterDemand.hwd
         outputJson['actual load cap'] = cls.actual_cap
         outputJson['residual energy'] = cls.stored_energy
         return outputJson
